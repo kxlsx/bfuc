@@ -7,7 +7,7 @@
 CC := gcc
 CFLAGS := -Wa,--64,--fatal-warnings,-f -nostdlib -no-pie
 
-SRCS := $(wildcard *.S)
+SRCS := bfuc.S
 EXEC := bfuc
 
 ifeq ($(OS),Windows_NT)
