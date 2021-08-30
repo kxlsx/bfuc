@@ -126,14 +126,23 @@ _start:
     mov    $ERR_READ, %rdi
     jmp    .Lexit
     0:
-    /* save input fd in %r12 */ 
-    mov    %rax, %r12
+    mov    %rax, %rdi
     jmp    2f
     1: 
     /* set input fd to stdin */
-    mov    $STDIN, %r12
+    mov    $STDIN, %rdi
 
     2:
+    /* parse the in file into the opvec */
+    call   bfparse
+    mov    %rax, %rdi
+    /* check for and print errors */
+    cmp    $OK, %rdi
+    je     0f
+    call   printerr
+    jmp    .Lexit
+    
+    0:
     /* open the out file with
      * O_CREAT and O_WRONLY
      */
@@ -152,23 +161,10 @@ _start:
     /* return error value and exit */
     mov    $ERR_WRITE, %rdi
     jmp    .Lexit
-    0:
-    /* save out fd in %r13 */
-    mov    %rax, %r13
-
-    /* parse the in file into the opvec */
-    mov    %r12, %rdi
-    call   bfparse
-    mov    %rax, %rdi
-    /* check for and print errors */
-    cmp    $OK, %rdi
-    je     0f
-    call   printerr
-    jmp    .Lexit
 
     0:
     /* compile the opvec into the out file */
-    mov    %r13, %rdi
+    mov    %rax, %rdi
     call   bfcompile
     mov    %rax, %rdi
     /* check for and print errors */
@@ -457,7 +453,7 @@ bfparse:
     /* get the offset after the last jzop */
     pop    %r12
     /* push a jnzop containing the relative 
-     * offset from  after itself to the location 
+     * offset from after itself to the location 
      * after the last jzop
      */
     mov    %r12, %rdi
@@ -470,9 +466,9 @@ bfparse:
     mov    opvec, %rax
     lea    (%rax, %rdi, OPVEC_ENTRY_SIZE), %rdi
 
-    /* put the relative offset from the last jzop
+    /* put the relative offset from after the last jzop
      * to the location after the current jznop
-     * in the last opvec jzop entry
+     * in the last jzop entry
      */
     mov    op_offset, %rax
     sub    %r12, %rax

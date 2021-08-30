@@ -1,4 +1,4 @@
-bfuc v0.0.1 
+bfuc v0.0.2
 ===========
 
 x86_64 Brainfuck compiler written in x84_64 assembly.
