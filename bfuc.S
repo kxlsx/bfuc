@@ -1,4 +1,4 @@
-#include "def.H"
+#include "def.S"
 
 .globl _start
 
