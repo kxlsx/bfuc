@@ -5,7 +5,7 @@
 
 # compiler and flags
 CC := gcc
-CFLAGS := -Wa,--64,--fatal-warnings,-f -nostdlib -no-pie
+CFLAGS := -Wa,--64,--fatal-warnings,-f -nostdlib -no-pie -pipe
 
 SRCS := bfuc.S
 EXEC := bfuc

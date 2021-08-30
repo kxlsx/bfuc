@@ -188,7 +188,8 @@ printerr:
     mov    $STDERR, %rdi
 
     /* jump to the matching label */
-    sub    $ERR_NOMEM, %rax
+    neg    %rax
+    add    $ERR_NOMEM, %rax
     mov    .Lprinterr_jmptbl(,%rax, 4), %eax
     jmp    *%rax
 
@@ -222,9 +223,9 @@ printerr:
 
     .Lprinterr_jmptbl:
     .int \
-       .Lprinterr_onnomem,  .Lprinterr_onwrite, \
+       .Lprinterr_onnomem,                      \
     .Lprinterr_onnoclosed, .Lprinterr_onnoopen, \
-       .Lprinterr_onnoops
+       .Lprinterr_onnoops,  .Lprinterr_onwrite
 
 
 /* Compile the contents of the opvec
@@ -445,7 +446,7 @@ bfparse:
     BFPARSE_FLUSH_MOVOP
     /* check if there's a matching jzop */
     cmp    %rsp, %rbp
-    je     0f
+    je     1f
 
     /* push cmpop just in case */
     BFPARSE_PUSH_OP(OP_CMP)
@@ -474,7 +475,7 @@ bfparse:
     sub    %r12, %rax
     mov    %eax, (%rdi)
     jmp    .Lparse_loop
-    0:
+    1:
     mov    $ERR_NOOPEN , %rax
     jmp    .Lparse_loop_end
 
