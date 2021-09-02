@@ -2,6 +2,19 @@
 
 .globl _start
 
+/* flush wbuf, jumping to the end on error */
+#define BFCOMPILE_WRITE        \
+    mov    %rbx, %rdi         ;\
+    mov    $wbuf, %rsi        ;\
+    mov    wbufp, %rdx        ;\
+    SYSCALL(SYS_WRITE)        ;\
+    cmp    $0, %rax           ;\
+    jg     0f                 ;\
+    mov    $ERR_WRITE, %rax   ;\
+    jmp    .Lcompile_loop_end ;\
+    0:                        ;\
+    movq    $0, wbufp
+
 /* jump to the end on error */
 #define BFPARSE_CHECK_NOMEM  \
     cmp    $ERR_NOMEM, %rax ;\
@@ -35,19 +48,6 @@
     BFPARSE_PUSH_OP_VAL(OP_MOV) ;\
     movl   $0, movopc           ;\
     0:
-
-/* flush wbuf, jumping to the end on error */
-#define BFCOMPILE_WRITE        \
-    mov    %rbx, %rdi         ;\
-    mov    $wbuf, %rsi        ;\
-    mov    wbufp, %rdx        ;\
-    SYSCALL(SYS_WRITE)        ;\
-    cmp    $0, %rax           ;\
-    jg     0f                 ;\
-    mov    $ERR_WRITE, %rax   ;\
-    jmp    .Lcompile_loop_end ;\
-    0:                        ;\
-    movq    $0, wbufp
 
 .bss
 /* Op counters */
@@ -99,54 +99,39 @@ ERR_NOOPS_MSG
 ERR_ROPEN_MSG
 ERR_WOPEN_MSG
 
-out_path:   .string "a.out"
+/* output file path */
+OUTPATH
 
 .text
 _start:
-    /* read the input file path from
-     * the first arg; use stdin if 
-     * none were provided
-     */
     pop    %rdi
-    cmp    $1, %rdi
-    je     1f
-    /* open the in file */
-    mov    8(%rsp), %rdi
-    mov    $0x0, %rsi
-    SYSCALL(SYS_OPEN)
-    /* check for errors */
-    cmp    $0, %rax
-    jge    0f
-    /* print error message */
-    mov    $STDERR, %rdi
-    mov    $err_ropen_msg, %rsi
-    mov    $ERR_ROPEN_MSG_SIZE, %rdx
-    SYSCALL(SYS_WRITE)
-    /* return error value and exit */
-    mov    $ERR_READ, %rdi
-    jmp    .Lexit
-    0:
-    mov    %rax, %rdi
-    jmp    2f
-    1: 
-    /* set input fd to stdin */
-    mov    $STDIN, %rdi
+    mov    %rsp, %rsi
+    call   bfparse_args
+    cmp    $OK, %rax
+    jne    .Lexit
 
-    2:
-    /* parse the in file into the opvec */
-    call   bfparse
+    mov    $outpath, %rdi
+    call   bfcompile_into_path
+
+    .Lexit:
     mov    %rax, %rdi
-    /* check for and print errors */
-    cmp    $OK, %rdi
-    je     0f
-    call   printerr
-    jmp    .Lexit
-    
-    0:
-    /* open the out file with
+    SYSCALL(SYS_EXIT)
+
+/* Call bfcompile with the fd being an opened 
+ * file with the provided path.
+ * ARGS:
+ *  null-terminated file path
+ * RETURNS:
+ *  OK
+ *  or
+ *  an ERR_* value
+ */
+bfcompile_into_path:
+    push   %rbx
+
+    /* open the file with
      * O_CREAT and O_WRONLY
      */
-    mov    $out_path, %rdi
     mov    $(0x1 | 0x40), %rsi
     mov    $0755, %rdx
     SYSCALL(SYS_OPEN)
@@ -159,26 +144,103 @@ _start:
     mov    $ERR_WOPEN_MSG_SIZE, %rdx
     SYSCALL(SYS_WRITE)
     /* return error value and exit */
-    mov    $ERR_WRITE, %rdi
-    jmp    .Lexit
-
+    mov    $ERR_WRITE, %rax
+    jmp    1f
+    
     0:
-    /* compile the opvec into the out file */
-    mov    %rax, %rdi
+    /* store the fd */
+    mov    %rax, %rbx
+    /* parse the fd */
+    mov    %rbx, %rdi
     call   bfcompile
+    /* restore the fd and store the return value */
+    mov    %rbx, %rdi
+    mov    %rax, %rbx
+
+    /* close the file */
+    SYSCALL(SYS_CLOSE)
+
+    /* restore the return value and check for errors */
+    mov    %rbx, %rax
+    cmp    $OK, %rax
+    je     1f
+    /* print errors */
     mov    %rax, %rdi
-    /* check for and print errors */
-    cmp    $OK, %rdi
-    je     .Lexit
     call   printerr
 
-    .Lexit:
-    SYSCALL(SYS_EXIT)
+    1:
+    pop    %rbx
+    ret
+
+/* Call bfparse with the fd either being stdin
+ * or an opened file whose path resides in argv. 
+ * ARGS:
+ *  argc, argv
+ * RETURNS:
+ *  OK
+ *  or
+ *  an ERR_* value
+ */
+bfparse_args:
+    push   %rbx
+
+    /* read the input file path from
+     * the first arg; use stdin if 
+     * none were provided
+     */
+    cmp    $1, %rdi
+    je     1f
+    /* open the file */
+    mov    8(%rsi), %rdi
+    mov    $0x0, %rsi
+    SYSCALL(SYS_OPEN)
+    /* check for errors */
+    cmp    $0, %rax
+    jge    0f
+    /* print error message */
+    mov    $STDERR, %rdi
+    mov    $err_ropen_msg, %rsi
+    mov    $ERR_ROPEN_MSG_SIZE, %rdx
+    SYSCALL(SYS_WRITE)
+    /* return error value and exit */
+    mov    $ERR_READ, %rax
+    jmp    3f
+
+    0:
+    /* store the fd */
+    mov    %rax, %rbx
+    jmp    2f
+    1:
+    mov    $STDIN, %rbx
+    2:
+    /* parse the fd */
+    mov    %rbx, %rdi
+    call   bfparse
+    /* restore the in fd and store the return value */
+    mov    %rbx, %rdi
+    mov    %rax, %rbx
+
+    /* close the file */
+    SYSCALL(SYS_CLOSE)
+
+    /* restore the return value and check for errors */
+    mov    %rbx, %rax
+    cmp    $OK, %rax
+    je     3f
+    /* print errors */
+    mov    %rax, %rdi
+    call   printerr
+
+    3:
+    pop    %rbx
+    ret
+
 
 /* Print the passed code as an error msg.
- * Preserves %rdi.
  * ARGS:
  *  ERR_* code
+ * RETURNS:
+ *  the passed code
  */
 printerr:
     /* store the passed value */
@@ -217,8 +279,8 @@ printerr:
     .Lprinterr_print:
     /* print the message */
     SYSCALL(SYS_WRITE)
-    /* restore the passed value */
-    pop    %rdi
+    /* return the passed value */
+    pop    %rax
     ret
 
     .Lprinterr_jmptbl:

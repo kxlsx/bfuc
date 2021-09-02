@@ -1,3 +1,18 @@
+#define STDIN  0
+#define STDOUT 1
+#define STDERR 2
+
+#define SYS_READ   0
+#define SYS_WRITE  1
+#define SYS_OPEN   2
+#define SYS_CLOSE  3
+#define SYS_BRK   12
+#define SYS_EXIT  60
+#define SYSCALL(SYS_N)   \
+    mov    $SYS_N, %rax ;\
+    syscall
+
+/* error codes and messages */
 #define OK            0
 #define EOF          -1
 #define ERR_NOMEM    -1
@@ -56,26 +71,15 @@ err_wopen_msg: \
 #define ERR_WOPEN_MSG_SIZE \
     (.Lerr_wopen_msg - err_wopen_msg)
 
-#define STDIN  0
-#define STDOUT 1
-#define STDERR 2
+/* output file path definiton */
+#define OUTPATH \
+    outpath: .ascii "a.out"
 
-#define SYS_READ   0
-#define SYS_WRITE  1
-#define SYS_OPEN   2
-#define SYS_CLOSE  3
-#define SYS_BRK   12
-#define SYS_EXIT  60
-#define SYSCALL(SYSCALLN) \
-    mov     $SYSCALLN, %rax ;\
-    syscall
-
+/* buffer sizes */
 #define RBUFSIZE 4096
 #define WBUFSIZE 7980
 
-#define OPVEC_ENTRY_SIZE 8
-#define OPVEC_INIT_CAP   (1024 * OPVEC_ENTRY_SIZE)
-
+/* elf header definitions */
 #define E_BASEADDR  0x400000
 #define E_ALIGN     0x1000
 #define E_BSS_LEN   8 * E_ALIGN
@@ -157,6 +161,10 @@ p_txt_align:           \
 #define __E_HEADER_SIZE()   (.Le_header_end - e_header)
 #define E_HEADER_SIZE __E_HEADER_SIZE()
 
+/* opvec and op stuff */
+#define OPVEC_ENTRY_SIZE 8
+#define OPVEC_INIT_CAP   (1024 * OPVEC_ENTRY_SIZE)
+
 /* An op's id's located in the most-singnificant dword */
 #define OP_SETUP 0x0000000000
 #define OP_EXIT  0x0100000000
@@ -178,11 +186,14 @@ op_setup_bin: \
 .Lop_setup_bin_end:
 #define OP_SETUP_BIN_SIZE (.Lop_setup_bin_end - op_setup_bin)
 
+/* mov (%rbx), %rdi 
+ * mov $SYS_EXIT, %rax
+ */
 #define OP_EXIT_BIN  \
 op_exit_bin:  \
-    .byte 0x48, 0x8b, 0x3b;            \
-    .byte 0x48, 0xc7, 0xc0; .int 0x3c; \
-    .byte 0x0f, 0x05;                  \
+    .byte 0x48, 0x8b, 0x3b;                \
+    .byte 0x48, 0xc7, 0xc0; .int SYS_EXIT; \
+    .byte 0x0f, 0x05;                      \
 .Lop_exit_bin_end:
 #define OP_EXIT_BIN_SIZE (.Lop_exit_bin_end - op_exit_bin)
 
@@ -224,28 +235,28 @@ op_jnz_bin:   \
 
 /* mov $0x0, %rdi
  * mov %rbx, %rsi
- * mov $0x1, %rax
+ * mov $SYS_WRITE, %rax
  * syscall
  */
 #define OP_PRINT_BIN \
 op_print_bin:  \
-    .byte 0x48, 0xc7, 0xc7; .int 0; \
-    .byte 0x48, 0x89, 0xde;         \
-    .byte 0x48, 0xc7, 0xc0; .int 1; \
-    .byte 0x0f, 0x05;               \
+    .byte 0x48, 0xc7, 0xc7; .int STDOUT;    \
+    .byte 0x48, 0x89, 0xde;                 \
+    .byte 0x48, 0xc7, 0xc0; .int SYS_WRITE; \
+    .byte 0x0f, 0x05;                       \
 .Lop_print_bin_end:
 #define OP_PRINT_BIN_SIZE (.Lop_print_bin_end - op_print_bin)
 
 /* mov $0x1, %rdi
  * mov %rbx, %rsi`
- * mov $0x0, %rax
+ * mov $SYS_READ, %rax
  * syscall
  */
 #define OP_GET_BIN   \
 op_get_bin:    \
-    .byte 0x48, 0xc7, 0xc7; .int 1; \
-    .byte 0x48, 0x89, 0xde;         \
-    .byte 0x48, 0xc7, 0xc0; .int 0; \
-    .byte 0x0f, 0x05;               \
+    .byte 0x48, 0xc7, 0xc7; .int STDIN;    \
+    .byte 0x48, 0x89, 0xde;                \
+    .byte 0x48, 0xc7, 0xc0; .int SYS_READ; \
+    .byte 0x0f, 0x05;                      \
 .Lop_get_bin_end:
 #define OP_GET_BIN_SIZE (.Lop_get_bin_end - op_get_bin)
