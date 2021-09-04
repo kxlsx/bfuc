@@ -1,3 +1,5 @@
+#define LABELIZE(LABELM) LABELM##:
+
 #define STDIN  0
 #define STDOUT 1
 #define STDERR 2
@@ -22,58 +24,66 @@
 #define ERR_WRITE    -5
 #define ERR_READ     -6
 
-#define ERR_NOMEM_MSG \
-err_nomem_msg: \
+#define ERR_NOMEM_MSG .LERR_NOMEM_MSG
+#define ERR_NOMEM_MSG_DEF \
+LABELIZE(ERR_NOMEM_MSG) \
     .ascii "Failed allocating memory.\n" ;\
-.Lerr_nomem_msg_end:
+.LERR_NOMEM_MSG_END:
 #define ERR_NOMEM_MSG_SIZE \
-    (.Lerr_nomem_msg_end - err_nomem_msg)
+    (.LERR_NOMEM_MSG_END - ERR_NOMEM_MSG)
 
-#define ERR_WRITE_MSG \
-err_write_msg: \
+#define ERR_WRITE_MSG .LERR_WRITE_MSG
+#define ERR_WRITE_MSG_DEF \
+LABELIZE(ERR_WRITE_MSG) \
     .ascii "Failed writing to file.\n" ;\
-.Lerr_write_msg_end:
+.LERR_WRITE_MSG_END:
 #define ERR_WRITE_MSG_SIZE \
-    (.Lerr_write_msg_end - err_write_msg)
+    (.LERR_WRITE_MSG_END - ERR_WRITE_MSG)
 
-#define ERR_NOCLOSED_MSG \
-err_noclosed_msg: \
+#define ERR_NOCLOSED_MSG .LERR_NOCLOSED_MSG
+#define ERR_NOCLOSED_MSG_DEF \
+LABELIZE(ERR_NOCLOSED_MSG) \
     .ascii "Parse error: Unclosed ']'.\n" ;\
-.Lerr_noclosed_msg_end:
+.LERR_NOCLOSED_MSG_END:
 #define ERR_NOCLOSED_MSG_SIZE \
-    (.Lerr_noclosed_msg_end - err_noclosed_msg)
+    (.LERR_NOCLOSED_MSG_END - ERR_NOCLOSED_MSG)
 
-#define ERR_NOOPEN_MSG \
-err_noopen_msg: \
+#define ERR_NOOPEN_MSG .LERR_NOOPEN_MSG
+#define ERR_NOOPEN_MSG_DEF \
+LABELIZE(ERR_NOOPEN_MSG) \
     .ascii "Parse error: Unopened '['.\n" ;\
-.Lerr_noopen_msg_end:
+.LERR_NOOPEN_MSG_END:
 #define ERR_NOOPEN_MSG_SIZE \
-    (.Lerr_noopen_msg_end - err_noopen_msg)
+    (.LERR_NOOPEN_MSG_END - ERR_NOOPEN_MSG)
 
-#define ERR_NOOPS_MSG \
-err_noops_msg: \
+#define ERR_NOOPS_MSG .LERR_NOOPS_MSG
+#define ERR_NOOPS_MSG_DEF \
+LABELIZE(ERR_NOOPS_MSG) \
     .ascii "No instructions; something has gone very wrong.\n" ;\
-.Lerr_noops_msg_end:
+.LERR_NOOPS_MSG_END:
 #define ERR_NOOPS_MSG_SIZE \
-    (.Lerr_noops_msg_end - err_noops_msg)
+    (.LERR_NOOPS_MSG_END - ERR_NOOPS_MSG)
 
-#define ERR_ROPEN_MSG \
-err_ropen_msg: \
+#define ERR_ROPEN_MSG .LERR_ROPEN_MSG
+#define ERR_ROPEN_MSG_DEF \
+LABELIZE(ERR_ROPEN_MSG) \
     .ascii "Failed opening input file.\n" ;\
-.Lerr_ropen_msg:
+.LERR_ROPEN_MSG_END:
 #define ERR_ROPEN_MSG_SIZE \
-    (.Lerr_ropen_msg - err_ropen_msg)
+    (.LERR_ROPEN_MSG_END - ERR_ROPEN_MSG)
 
-#define ERR_WOPEN_MSG \
-err_wopen_msg: \
+#define ERR_WOPEN_MSG .LERR_WOPEN_MSG
+#define ERR_WOPEN_MSG_DEF \
+LABELIZE(ERR_WOPEN_MSG) \
     .ascii "Failed creating output file.\n" ;\
-.Lerr_wopen_msg:
+.LERR_WOPEN_MSG_END:
 #define ERR_WOPEN_MSG_SIZE \
-    (.Lerr_wopen_msg - err_wopen_msg)
+    (.LERR_WOPEN_MSG_END - ERR_WOPEN_MSG)
 
 /* output file path definiton */
-#define OUTPATH \
-    outpath: .ascii "a.out"
+#define OUTPATH .LOUTPATH
+#define OUTPATH_DEF \
+    LABELIZE(OUTPATH) .ascii "a.out"
 
 /* buffer sizes */
 #define RBUFSIZE 4096
@@ -86,9 +96,13 @@ err_wopen_msg: \
 #define E_BSSADDR   E_BASEADDR + 0xb0
 #define E_TXTADDR   E_BSSADDR  + E_BSS_LEN
 #define E_UNDEF     0x0
-#define E_HEADER       \
-e_header:              \
-e_ident:               \
+
+#define E_HEADER     .LE_HEADER
+#define P_TXT_FILESZ .LP_TXT_FILESZ
+#define P_TXT_MEMSZ  .LP_TXT_MEMSZ
+#define E_HEADER_DEF   \
+LABELIZE(E_HEADER)     \
+/* E_IDENT */          \
     .byte   0x7f      ;\
     .ascii  "ELF"     ;\
     .byte   0x2       ;\
@@ -97,71 +111,70 @@ e_ident:               \
     .byte   0x0       ;\
     .byte   E_UNDEF   ;\
     .zero   7         ;\
-e_type:                \
+/* E_TYPE */           \
     .word   0x2       ;\
-e_machine:             \
+/* E_MACHINE */        \
     .word   0x3e      ;\
-e_version:             \
+/* E_VERSION */        \
     .int    0x1       ;\
-e_entry:               \
+/* E_ENTRY */          \
     .quad   E_TXTADDR ;\
-e_phoff:               \
+/* E_PHOFF */          \
     .quad   0x40      ;\
-e_shoff:               \
+/* E_SHOFF */          \
     .quad   E_UNDEF   ;\
-e_flags:               \
+/* E_FLAGS */          \
     .int    E_UNDEF   ;\
-e_ehsize:              \
+/* E_EHSIZE */         \
     .word   0x40      ;\
-e_phentsize:           \
+/* E_PHENTSIZE */      \
     .word   0x38      ;\
-e_phnum:               \
+/* E_PHNUM */          \
     .word   0x2       ;\
-e_shentsize:           \
+/* E_SHENTSIZE */      \
     .word   E_UNDEF   ;\
-e_shnum:               \
+/* E_SHNUM */          \
     .word   E_UNDEF   ;\
-e_shstrndx:            \
-    .word   E_UNDEF ;\
-p_bss_header:          \
-p_bss_type:            \
+/* E_SHSTRNDX */       \
+    .word   E_UNDEF   ;\
+/* P_BSS_HEADER */     \
+/* P_BSS_TYPE */       \
     .int    0x1       ;\
-p_bss_flags:           \
+/* P_BSS_FLAGS */      \
     .int    0x6       ;\
-p_bss_offset:          \
+/* P_BSS_OFFSET */     \
     .quad   0xb0      ;\
-p_bss_vaddr:           \
+/* P_BSS_VADDR */      \
     .quad   E_BSSADDR ;\
-p_bss_paddr:           \
+/* P_BSS_PADDR */      \
     .quad   E_UNDEF   ;\
-p_bss_filesz:          \
+/* P_BSS_FILESZ */     \
     .quad   0x0       ;\
-p_bss_memsz:           \
+/* P_BSS_MEMSZ */      \
     .quad   E_BSS_LEN ;\
-p_bss_align:           \
+/* P_BSS_ALIGN */      \
     .quad   E_ALIGN   ;\
-p_txt_header:          \
-p_txt_type:            \
+/* P_TXT_HEADER */     \
+/* P_TXT_TYPE */       \
     .int    0x1       ;\
-p_txt_flags:           \
+/* P_TXT_FLAGS */      \
     .int    0x5       ;\
-p_txt_offset:          \
+/* P_TXT_OFFSET */     \
     .quad   0xb0      ;\
-p_txt_vaddr:           \
+/* P_TXT_VADDR */      \
     .quad   E_TXTADDR ;\
-p_txt_paddr:           \
+/* P_TXT_PADDR */      \
     .quad   E_UNDEF   ;\
-p_txt_filesz:          \
+LABELIZE(P_TXT_FILESZ) \
     .quad   E_UNDEF   ;\
-p_txt_memsz:           \
+LABELIZE(P_TXT_MEMSZ)  \
     .quad   E_UNDEF   ;\
-p_txt_align:           \
+/* P_TXT_ALIGN */      \
     .quad   E_ALIGN   ;\
-.Le_header_end:  
-#define __E_HEADER_SIZE()   (.Le_header_end - e_header)
-#define E_HEADER_SIZE __E_HEADER_SIZE()
+.LE_HEADER_END:
+#define E_HEADER_SIZE (.LE_HEADER_END - E_HEADER)
 
-/* opvec and op stuff */
+/* opvec sizes */
 #define OPVEC_ENTRY_SIZE 8
 #define OPVEC_INIT_CAP   (1024 * OPVEC_ENTRY_SIZE)
 
@@ -176,87 +189,100 @@ p_txt_align:           \
 #define OP_PRINT 0x0700000000
 #define OP_GET   0x0800000000
 
+/* op machine code translation definitions */
+#define OP_SETUP_COD .LOP_SETUP_COD
 /* mov $E_BSSADDR, %rbx
  * mov $1, %rdx
  */
-#define OP_SETUP_BIN \
-op_setup_bin: \
+#define OP_SETUP_COD_DEF \
+LABELIZE(OP_SETUP_COD) \
     .byte 0x48, 0xc7, 0xc3; .int E_BSSADDR; \
     .byte 0x48, 0xc7, 0xc2; .int 0x1;       \
-.Lop_setup_bin_end:
-#define OP_SETUP_BIN_SIZE (.Lop_setup_bin_end - op_setup_bin)
+.LOP_SETUP_COD_END:
+#define OP_SETUP_COD_SIZE (.LOP_SETUP_COD_END - OP_SETUP_COD)
 
+#define OP_EXIT_COD .LOP_EXIT_COD
 /* mov (%rbx), %rdi 
  * mov $SYS_EXIT, %rax
  */
-#define OP_EXIT_BIN  \
-op_exit_bin:  \
+#define OP_EXIT_COD_DEF \
+LABELIZE(OP_EXIT_COD) \
     .byte 0x48, 0x8b, 0x3b;                \
     .byte 0x48, 0xc7, 0xc0; .int SYS_EXIT; \
     .byte 0x0f, 0x05;                      \
-.Lop_exit_bin_end:
-#define OP_EXIT_BIN_SIZE (.Lop_exit_bin_end - op_exit_bin)
+.LOP_EXIT_COD_END:
+#define OP_EXIT_COD_SIZE (.LOP_EXIT_COD_END - OP_EXIT_COD)
 
-/* add $arthop_bin_val, (%rbx) */
-#define OP_ARTH_BIN  \
-op_arth_bin:  \
-    .byte 0x80, 0x03;       op_arth_bin_val: .byte 0x0; \
-.Lop_arth_bin_end:
-#define OP_ARTH_BIN_SIZE  (.Lop_arth_bin_end - op_arth_bin)
+#define OP_ARTH_COD     .LOP_ARTH_COD
+#define OP_ARTH_COD_VAL .LOP_ARTH_COD_VAL
+/* add OP_ARTH_COD_VAL, (%rbx) */
+#define OP_ARTH_COD_DEF \
+LABELIZE(OP_ARTH_COD) \
+    .byte 0x80, 0x03; LABELIZE(OP_ARTH_COD_VAL) .byte 0x0; \
+.LOP_ARTH_COD_END:
+#define OP_ARTH_COD_SIZE (.LOP_ARTH_COD_END - OP_ARTH_COD)
 
-/* lea $movop_bin_val(%rbx), %rbx */
-#define OP_MOV_BIN   \
-op_mov_bin:   \
-    .byte 0x48, 0x8d, 0x9b; op_mov_bin_val:  .int 0x0;  \
-.Lop_mov_bin_end:
-#define OP_MOV_BIN_SIZE (.Lop_mov_bin_end - op_mov_bin)
+#define OP_MOV_COD     .LOP_MOV_COD
+#define OP_MOV_COD_VAL .LOP_MOV_COD_VAL
+/* lea OP_MOV_COD_VAL(%rbx), %rbx */
+#define OP_MOV_COD_DEF \
+LABELIZE(OP_MOV_COD) \
+    .byte 0x48, 0x8d, 0x9b; LABELIZE(OP_MOV_COD_VAL) .int 0x0; \
+.LOP_MOV_COD_END:
+#define OP_MOV_COD_SIZE (.LOP_MOV_COD_END - OP_MOV_COD)
 
+#define OP_CMP_COD .LOP_CMP_COD
 /* testb 0xff, (%rbx) */
-#define OP_CMP_BIN   \
-op_cmp_bin:   \
+#define OP_CMP_COD_DEF \
+LABELIZE(OP_CMP_COD) \
     .byte 0xf6, 0x03, 0xff; \
-.Lop_cmp_bin_end:
-#define OP_CMP_BIN_SIZE (.Lop_cmp_bin_end - op_cmp_bin)
+.LOP_CMP_COD_END:
+#define OP_CMP_COD_SIZE (.LOP_CMP_COD_END - OP_CMP_COD)
 
-/* jnz $op_jz_bin_val */
-#define OP_JZ_BIN    \
-op_jz_bin:    \
-    .byte 0x0f, 0x84;       op_jz_bin_val:   .int 0x0;  \
-.Lop_jz_bin_end:
-#define __OP_JZ_BIN_SIZE() (.Lop_jz_bin_end - op_jz_bin)
-#define OP_JZ_BIN_SIZE __OP_JZ_BIN_SIZE()
+#define OP_JZ_COD     .LOP_JZ_COD
+#define OP_JZ_COD_VAL .LOP_JZ_COD_VAL
+/* jz OP_JZ_COD_VAL */
+#define OP_JZ_COD_DEF \
+LABELIZE(OP_JZ_COD) \
+    .byte 0x0f, 0x84; LABELIZE(OP_JZ_COD_VAL) .int 0x0; \
+.LOP_JZ_COD_END:
+#define OP_JZ_COD_SIZE (.LOP_JZ_COD_END - OP_JZ_COD)
 
-/* jnz   $op_jnz_bin_val */
-#define OP_JNZ_BIN   \
-op_jnz_bin:   \
-    .byte 0x0f, 0x85;       op_jnz_bin_val:   .int 0x0; \
-.Lop_jnz_bin_end:
-#define OP_JNZ_BIN_SIZE (.Lop_jnz_bin_end - op_jnz_bin)
+#define OP_JNZ_COD     .LOP_JNZ_COD
+#define OP_JNZ_COD_VAL .LOP_JNZ_COD_VAL
+/* jnz OP_JNZ_COD_VAL */
+#define OP_JNZ_COD_DEF \
+LABELIZE(OP_JNZ_COD) \
+    .byte 0x0f, 0x85; LABELIZE(OP_JNZ_COD_VAL) .int 0x0; \
+.LOP_JNZ_COD_END:
+#define OP_JNZ_COD_SIZE (.LOP_JNZ_COD_END - OP_JNZ_COD)
 
+#define OP_PRINT_COD .LOP_PRINT_COD
 /* mov $0x0, %rdi
  * mov %rbx, %rsi
  * mov $SYS_WRITE, %rax
  * syscall
  */
-#define OP_PRINT_BIN \
-op_print_bin:  \
+#define OP_PRINT_COD_DEF \
+LABELIZE(OP_PRINT_COD) \
     .byte 0x48, 0xc7, 0xc7; .int STDOUT;    \
     .byte 0x48, 0x89, 0xde;                 \
     .byte 0x48, 0xc7, 0xc0; .int SYS_WRITE; \
     .byte 0x0f, 0x05;                       \
-.Lop_print_bin_end:
-#define OP_PRINT_BIN_SIZE (.Lop_print_bin_end - op_print_bin)
+.LOP_PRINT_COD_END:
+#define OP_PRINT_COD_SIZE (.LOP_PRINT_COD_END - OP_PRINT_COD)
 
+#define OP_GET_COD .LOP_GET_COD
 /* mov $0x1, %rdi
  * mov %rbx, %rsi`
  * mov $SYS_READ, %rax
  * syscall
  */
-#define OP_GET_BIN   \
-op_get_bin:    \
+#define OP_GET_COD_DEF \
+LABELIZE(OP_GET_COD) \
     .byte 0x48, 0xc7, 0xc7; .int STDIN;    \
     .byte 0x48, 0x89, 0xde;                \
     .byte 0x48, 0xc7, 0xc0; .int SYS_READ; \
     .byte 0x0f, 0x05;                      \
-.Lop_get_bin_end:
-#define OP_GET_BIN_SIZE (.Lop_get_bin_end - op_get_bin)
+.LOP_GET_COD_END:
+#define OP_GET_COD_SIZE (.LOP_GET_COD_END - OP_GET_COD)

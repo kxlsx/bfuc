@@ -25,13 +25,13 @@
     or     %rsi, %rdi          ;\
     call   opvec_push          ;\
     BFPARSE_CHECK_NOMEM        ;\
-    addq   $OP ## _BIN_SIZE, op_offset
+    addq   $OP##_COD_SIZE, op_offset
 /* Push an OP into the opvec */
 #define BFPARSE_PUSH_OP(OP)     \
     mov    $OP, %rdi           ;\
     call   opvec_push          ;\
     BFPARSE_CHECK_NOMEM        ;\
-    addq   $OP ## _BIN_SIZE, op_offset
+    addq   $OP##_COD_SIZE, op_offset
 /* check arthopc and push an arthop if it's not 0 */
 #define BFPARSE_FLUSH_ARTHOP      \
     cmpb   $0, arthopc           ;\
@@ -77,40 +77,41 @@ wbufp:       .quad  0
 
 .data
 /* elf header */
-E_HEADER
+E_HEADER_DEF
 
 /* op optcodes */
-OP_SETUP_BIN
-OP_EXIT_BIN
-OP_ARTH_BIN
-OP_MOV_BIN
-OP_CMP_BIN
-OP_JZ_BIN
-OP_JNZ_BIN
-OP_PRINT_BIN
-OP_GET_BIN
+OP_SETUP_COD_DEF
+OP_EXIT_COD_DEF
+OP_ARTH_COD_DEF
+OP_MOV_COD_DEF
+OP_CMP_COD_DEF
+OP_JZ_COD_DEF
+OP_JNZ_COD_DEF
+OP_PRINT_COD_DEF
+OP_GET_COD_DEF
 
 /* error messages */
-ERR_NOMEM_MSG
-ERR_WRITE_MSG
-ERR_NOCLOSED_MSG
-ERR_NOOPEN_MSG
-ERR_NOOPS_MSG
-ERR_ROPEN_MSG
-ERR_WOPEN_MSG
+ERR_NOMEM_MSG_DEF
+ERR_WRITE_MSG_DEF
+ERR_NOCLOSED_MSG_DEF
+ERR_NOOPEN_MSG_DEF
+ERR_NOOPS_MSG_DEF
+ERR_ROPEN_MSG_DEF
+ERR_WOPEN_MSG_DEF
 
 /* output file path */
-OUTPATH
+OUTPATH_DEF
 
 .text
 _start:
+    /* pass argc and argv as fn args */
     pop    %rdi
     mov    %rsp, %rsi
     call   bfparse_args
     cmp    $OK, %rax
     jne    .Lexit
 
-    mov    $outpath, %rdi
+    mov    $OUTPATH, %rdi
     call   bfcompile_into_path
 
     .Lexit:
@@ -140,7 +141,7 @@ bfcompile_into_path:
     jge    0f
     /* print error message */
     mov    $STDERR, %rdi
-    mov    $err_wopen_msg, %rsi
+    mov    $ERR_WOPEN_MSG, %rsi
     mov    $ERR_WOPEN_MSG_SIZE, %rdx
     SYSCALL(SYS_WRITE)
     /* return error value and exit */
@@ -199,7 +200,7 @@ bfparse_args:
     jge    0f
     /* print error message */
     mov    $STDERR, %rdi
-    mov    $err_ropen_msg, %rsi
+    mov    $ERR_ROPEN_MSG, %rsi
     mov    $ERR_ROPEN_MSG_SIZE, %rdx
     SYSCALL(SYS_WRITE)
     /* return error value and exit */
@@ -256,23 +257,23 @@ printerr:
     jmp    *%rax
 
     .Lprinterr_onnomem:
-    mov    $err_nomem_msg, %rsi
+    mov    $ERR_NOMEM_MSG, %rsi
     mov    $ERR_NOMEM_MSG_SIZE, %rdx
     jmp    .Lprinterr_print
     .Lprinterr_onwrite:
-    mov    $err_write_msg, %rsi
+    mov    $ERR_WRITE_MSG, %rsi
     mov    $ERR_WRITE_MSG_SIZE, %rdx
     jmp    .Lprinterr_print
     .Lprinterr_onnoclosed:
-    mov    $err_noclosed_msg, %rsi
+    mov    $ERR_NOCLOSED_MSG, %rsi
     mov    $ERR_NOCLOSED_MSG_SIZE, %rdx
     jmp    .Lprinterr_print
     .Lprinterr_onnoopen:
-    mov    $err_noopen_msg, %rsi
+    mov    $ERR_NOOPEN_MSG, %rsi
     mov    $ERR_NOOPEN_MSG_SIZE, %rdx
     jmp    .Lprinterr_print
     .Lprinterr_onnoops:
-    mov    $err_noops_msg, %rsi
+    mov    $ERR_NOOPS_MSG, %rsi
     mov    $ERR_NOOPS_MSG_SIZE, %rdx
     jmp    .Lprinterr_print
 
@@ -319,10 +320,10 @@ bfcompile:
     0:
     /* update the txt segment's sizes */
     mov    op_offset, %rax
-    mov    %rax, p_txt_filesz
-    mov    %rax, p_txt_memsz
+    mov    %rax, P_TXT_FILESZ
+    mov    %rax, P_TXT_MEMSZ
     /* write the elf header */
-    mov    $e_header, %rsi
+    mov    $E_HEADER, %rsi
     mov    $wbuf, %rdi
     mov    $E_HEADER_SIZE, %rcx
     rep    movsb
@@ -341,44 +342,44 @@ bfcompile:
     jmp    *%rcx
 
     .Lcompile_onexitop:
-    mov    $op_exit_bin, %rsi
-    mov    $OP_EXIT_BIN_SIZE, %rcx
+    mov    $OP_EXIT_COD, %rsi
+    mov    $OP_EXIT_COD_SIZE, %rcx
     jmp    .Lcompile_loop_cond
     .Lcompile_onsetupop:
-    mov    $op_setup_bin, %rsi
-    mov    $OP_SETUP_BIN_SIZE, %rcx
+    mov    $OP_SETUP_COD, %rsi
+    mov    $OP_SETUP_COD_SIZE, %rcx
     jmp    .Lcompile_loop_cond
     .Lcompile_onarthop:
-    mov    %al, op_arth_bin_val
-    mov    $op_arth_bin, %rsi
-    mov    $OP_ARTH_BIN_SIZE, %rcx
+    mov    %al, OP_ARTH_COD_VAL
+    mov    $OP_ARTH_COD, %rsi
+    mov    $OP_ARTH_COD_SIZE, %rcx
     jmp    .Lcompile_loop_cond
     .Lcompile_onmovop:
-    mov    %eax, op_mov_bin_val
-    mov    $op_mov_bin, %rsi
-    mov    $OP_MOV_BIN_SIZE, %rcx
+    mov    %eax, OP_MOV_COD_VAL
+    mov    $OP_MOV_COD, %rsi
+    mov    $OP_MOV_COD_SIZE, %rcx
     jmp    .Lcompile_loop_cond
     .Lcompile_oncmpop:
-    mov    $op_cmp_bin, %rsi
-    mov    $OP_CMP_BIN_SIZE, %rcx
+    mov    $OP_CMP_COD, %rsi
+    mov    $OP_CMP_COD_SIZE, %rcx
     jmp    .Lcompile_loop_cond
     .Lcompile_onjzop:
-    mov    %eax, op_jz_bin_val
-    mov    $op_jz_bin, %rsi
-    mov    $OP_JZ_BIN_SIZE, %rcx
+    mov    %eax, OP_JZ_COD_VAL
+    mov    $OP_JZ_COD, %rsi
+    mov    $OP_JZ_COD_SIZE, %rcx
     jmp    .Lcompile_loop_cond
     .Lcompile_onjnzop:
-    mov    %eax, op_jnz_bin_val
-    mov    $op_jnz_bin, %rsi
-    mov    $OP_JNZ_BIN_SIZE, %rcx
+    mov    %eax, OP_JNZ_COD_VAL
+    mov    $OP_JNZ_COD, %rsi
+    mov    $OP_JNZ_COD_SIZE, %rcx
     jmp    .Lcompile_loop_cond
     .Lcompile_onprintop:
-    mov    $op_print_bin, %rsi
-    mov    $OP_PRINT_BIN_SIZE, %rcx
+    mov    $OP_PRINT_COD, %rsi
+    mov    $OP_PRINT_COD_SIZE, %rcx
     jmp    .Lcompile_loop_cond
     .Lcompile_ongetop:
-    mov    $op_get_bin, %rsi
-    mov    $OP_GET_BIN_SIZE, %rcx
+    mov    $OP_GET_COD, %rsi
+    mov    $OP_GET_COD_SIZE, %rcx
     jmp    .Lcompile_loop_cond
 
     .Lcompile_loop_cond:
@@ -521,7 +522,7 @@ bfparse:
      */
     mov    %r12, %rdi
     sub    op_offset, %edi
-    sub    $OP_JNZ_BIN_SIZE, %edi
+    sub    $OP_JNZ_COD_SIZE, %edi
     BFPARSE_PUSH_OP_VAL(OP_JNZ)
 
     /* calculate the last jzop's address */
