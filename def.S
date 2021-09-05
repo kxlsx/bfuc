@@ -93,7 +93,7 @@ LABELIZE(ERR_WOPEN_MSG) \
 #define E_BASEADDR  0x400000
 #define E_ALIGN     0x1000
 #define E_BSS_LEN   8 * E_ALIGN
-#define E_BSSADDR   E_BASEADDR + 0xb0
+#define E_BSSADDR   E_BASEADDR + 0x40 + 0x38 * 2
 #define E_TXTADDR   E_BSSADDR  + E_BSS_LEN
 #define E_UNDEF     0x0
 
@@ -189,100 +189,84 @@ LABELIZE(P_TXT_MEMSZ)  \
 #define OP_PRINT 0x0700000000
 #define OP_GET   0x0800000000
 
+
 /* op machine code translation definitions */
+/* temporary dword and byte op values */
+#define OP_VAL_DWTMP 0xaaaaaa
+#define OP_VAL_BTMP  0xaa
+
 #define OP_SETUP_COD .LOP_SETUP_COD
-/* mov $E_BSSADDR, %rbx
- * mov $1, %rdx
- */
-#define OP_SETUP_COD_DEF \
-LABELIZE(OP_SETUP_COD) \
-    .byte 0x48, 0xc7, 0xc3; .int E_BSSADDR; \
-    .byte 0x48, 0xc7, 0xc2; .int 0x1;       \
+#define OP_SETUP_COD_DEF     \
+LABELIZE(OP_SETUP_COD)       \
+    mov    $E_BSSADDR, %rbx ;\
+    mov    $1, %rdx         ;\
 .LOP_SETUP_COD_END:
 #define OP_SETUP_COD_SIZE (.LOP_SETUP_COD_END - OP_SETUP_COD)
 
 #define OP_EXIT_COD .LOP_EXIT_COD
-/* mov (%rbx), %rdi 
- * mov $SYS_EXIT, %rax
- */
-#define OP_EXIT_COD_DEF \
-LABELIZE(OP_EXIT_COD) \
-    .byte 0x48, 0x8b, 0x3b;                \
-    .byte 0x48, 0xc7, 0xc0; .int SYS_EXIT; \
-    .byte 0x0f, 0x05;                      \
+#define OP_EXIT_COD_DEF     \
+LABELIZE(OP_EXIT_COD)       \
+    mov    (%rbx), %rdi    ;\
+    mov    $SYS_EXIT, %rax ;\
+    syscall                ;\
 .LOP_EXIT_COD_END:
 #define OP_EXIT_COD_SIZE (.LOP_EXIT_COD_END - OP_EXIT_COD)
 
 #define OP_ARTH_COD     .LOP_ARTH_COD
-#define OP_ARTH_COD_VAL .LOP_ARTH_COD_VAL
-/* add OP_ARTH_COD_VAL, (%rbx) */
-#define OP_ARTH_COD_DEF \
-LABELIZE(OP_ARTH_COD) \
-    .byte 0x80, 0x03; LABELIZE(OP_ARTH_COD_VAL) .byte 0x0; \
+#define OP_ARTH_COD_VAL (.LOP_ARTH_COD + 2)
+#define OP_ARTH_COD_DEF          \
+LABELIZE(OP_ARTH_COD)            \
+    addb   $OP_VAL_BTMP, (%rbx) ;\
 .LOP_ARTH_COD_END:
 #define OP_ARTH_COD_SIZE (.LOP_ARTH_COD_END - OP_ARTH_COD)
 
 #define OP_MOV_COD     .LOP_MOV_COD
-#define OP_MOV_COD_VAL .LOP_MOV_COD_VAL
-/* lea OP_MOV_COD_VAL(%rbx), %rbx */
-#define OP_MOV_COD_DEF \
-LABELIZE(OP_MOV_COD) \
-    .byte 0x48, 0x8d, 0x9b; LABELIZE(OP_MOV_COD_VAL) .int 0x0; \
+#define OP_MOV_COD_VAL (.LOP_MOV_COD + 3)
+#define OP_MOV_COD_DEF               \
+LABELIZE(OP_MOV_COD)                 \
+    lea    OP_VAL_DWTMP(%rbx), %rbx ;\
 .LOP_MOV_COD_END:
 #define OP_MOV_COD_SIZE (.LOP_MOV_COD_END - OP_MOV_COD)
 
 #define OP_CMP_COD .LOP_CMP_COD
-/* testb 0xff, (%rbx) */
-#define OP_CMP_COD_DEF \
-LABELIZE(OP_CMP_COD) \
-    .byte 0xf6, 0x03, 0xff; \
+#define OP_CMP_COD_DEF    \
+LABELIZE(OP_CMP_COD)      \
+    testb  $0xff, (%rbx) ;\
 .LOP_CMP_COD_END:
 #define OP_CMP_COD_SIZE (.LOP_CMP_COD_END - OP_CMP_COD)
 
 #define OP_JZ_COD     .LOP_JZ_COD
-#define OP_JZ_COD_VAL .LOP_JZ_COD_VAL
-/* jz OP_JZ_COD_VAL */
-#define OP_JZ_COD_DEF \
-LABELIZE(OP_JZ_COD) \
-    .byte 0x0f, 0x84; LABELIZE(OP_JZ_COD_VAL) .int 0x0; \
+#define OP_JZ_COD_VAL (.LOP_JZ_COD + 2)
+#define OP_JZ_COD_DEF    \
+LABELIZE(OP_JZ_COD)      \
+    jz     OP_VAL_DWTMP ;\
 .LOP_JZ_COD_END:
 #define OP_JZ_COD_SIZE (.LOP_JZ_COD_END - OP_JZ_COD)
 
 #define OP_JNZ_COD     .LOP_JNZ_COD
-#define OP_JNZ_COD_VAL .LOP_JNZ_COD_VAL
-/* jnz OP_JNZ_COD_VAL */
-#define OP_JNZ_COD_DEF \
-LABELIZE(OP_JNZ_COD) \
-    .byte 0x0f, 0x85; LABELIZE(OP_JNZ_COD_VAL) .int 0x0; \
+#define OP_JNZ_COD_VAL (.LOP_JNZ_COD + 2)
+#define OP_JNZ_COD_DEF    \
+LABELIZE(OP_JNZ_COD)      \
+    jnz     OP_VAL_DWTMP ;\
 .LOP_JNZ_COD_END:
 #define OP_JNZ_COD_SIZE (.LOP_JNZ_COD_END - OP_JNZ_COD)
 
 #define OP_PRINT_COD .LOP_PRINT_COD
-/* mov $0x0, %rdi
- * mov %rbx, %rsi
- * mov $SYS_WRITE, %rax
- * syscall
- */
-#define OP_PRINT_COD_DEF \
-LABELIZE(OP_PRINT_COD) \
-    .byte 0x48, 0xc7, 0xc7; .int STDOUT;    \
-    .byte 0x48, 0x89, 0xde;                 \
-    .byte 0x48, 0xc7, 0xc0; .int SYS_WRITE; \
-    .byte 0x0f, 0x05;                       \
+#define OP_PRINT_COD_DEF     \
+LABELIZE(OP_PRINT_COD)       \
+    mov    $STDOUT, %rdi    ;\
+    mov    %rbx, %rsi       ;\
+    mov    $SYS_WRITE, %rax ;\
+    syscall                 ;\
 .LOP_PRINT_COD_END:
 #define OP_PRINT_COD_SIZE (.LOP_PRINT_COD_END - OP_PRINT_COD)
 
 #define OP_GET_COD .LOP_GET_COD
-/* mov $0x1, %rdi
- * mov %rbx, %rsi`
- * mov $SYS_READ, %rax
- * syscall
- */
-#define OP_GET_COD_DEF \
-LABELIZE(OP_GET_COD) \
-    .byte 0x48, 0xc7, 0xc7; .int STDIN;    \
-    .byte 0x48, 0x89, 0xde;                \
-    .byte 0x48, 0xc7, 0xc0; .int SYS_READ; \
-    .byte 0x0f, 0x05;                      \
+#define OP_GET_COD_DEF      \
+LABELIZE(OP_GET_COD)        \
+    mov    $STDIN, %rdi    ;\
+    mov    %rbx, %rsi      ;\
+    mov    $SYS_READ, %rax ;\
+    syscall                ;\
 .LOP_GET_COD_END:
 #define OP_GET_COD_SIZE (.LOP_GET_COD_END - OP_GET_COD)

@@ -18,7 +18,7 @@ COMPILATION QUIRKS
  * On error, returns a negative error value and prints a message to stderr.
 
 COMPILED QUIRKS
-------------------
+---------------
  * Cells are byte-sized.
  * On termination, the program returns the value of the current cell.
  * On EOF the cell's value remains unchanged.
