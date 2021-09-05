@@ -92,9 +92,9 @@ LABELIZE(ERR_WOPEN_MSG) \
 /* elf header definitions */
 #define E_BASEADDR  0x400000
 #define E_ALIGN     0x1000
-#define E_BSS_LEN   8 * E_ALIGN
-#define E_BSSADDR   E_BASEADDR + 0x40 + 0x38 * 2
-#define E_TXTADDR   E_BSSADDR  + E_BSS_LEN
+#define E_BSS_LEN   (8 * E_ALIGN)
+#define E_BSSADDR   (E_BASEADDR + 0x40 + 0x38 * 2)
+#define E_TXTADDR   (E_BSSADDR  + E_BSS_LEN)
 #define E_UNDEF     0x0
 
 #define E_HEADER     .LE_HEADER
@@ -189,11 +189,10 @@ LABELIZE(P_TXT_MEMSZ)  \
 #define OP_PRINT 0x0700000000
 #define OP_GET   0x0800000000
 
-
 /* op machine code translation definitions */
 /* temporary dword and byte op values */
-#define OP_VAL_DWTMP 0xaaaaaa
-#define OP_VAL_BTMP  0xaa
+#define OP_VAL_TMPL 0xaaaaaa
+#define OP_VAL_TMPB  0xaa
 
 #define OP_SETUP_COD .LOP_SETUP_COD
 #define OP_SETUP_COD_DEF     \
@@ -216,15 +215,15 @@ LABELIZE(OP_EXIT_COD)       \
 #define OP_ARTH_COD_VAL (.LOP_ARTH_COD + 2)
 #define OP_ARTH_COD_DEF          \
 LABELIZE(OP_ARTH_COD)            \
-    addb   $OP_VAL_BTMP, (%rbx) ;\
+    addb   $OP_VAL_TMPB, (%rbx) ;\
 .LOP_ARTH_COD_END:
 #define OP_ARTH_COD_SIZE (.LOP_ARTH_COD_END - OP_ARTH_COD)
 
 #define OP_MOV_COD     .LOP_MOV_COD
 #define OP_MOV_COD_VAL (.LOP_MOV_COD + 3)
-#define OP_MOV_COD_DEF               \
-LABELIZE(OP_MOV_COD)                 \
-    lea    OP_VAL_DWTMP(%rbx), %rbx ;\
+#define OP_MOV_COD_DEF              \
+LABELIZE(OP_MOV_COD)                \
+    lea    OP_VAL_TMPL(%rbx), %rbx ;\
 .LOP_MOV_COD_END:
 #define OP_MOV_COD_SIZE (.LOP_MOV_COD_END - OP_MOV_COD)
 
@@ -237,17 +236,17 @@ LABELIZE(OP_CMP_COD)      \
 
 #define OP_JZ_COD     .LOP_JZ_COD
 #define OP_JZ_COD_VAL (.LOP_JZ_COD + 2)
-#define OP_JZ_COD_DEF    \
-LABELIZE(OP_JZ_COD)      \
-    jz     OP_VAL_DWTMP ;\
+#define OP_JZ_COD_DEF   \
+LABELIZE(OP_JZ_COD)     \
+    jz     OP_VAL_TMPL ;\
 .LOP_JZ_COD_END:
 #define OP_JZ_COD_SIZE (.LOP_JZ_COD_END - OP_JZ_COD)
 
 #define OP_JNZ_COD     .LOP_JNZ_COD
 #define OP_JNZ_COD_VAL (.LOP_JNZ_COD + 2)
-#define OP_JNZ_COD_DEF    \
-LABELIZE(OP_JNZ_COD)      \
-    jnz     OP_VAL_DWTMP ;\
+#define OP_JNZ_COD_DEF   \
+LABELIZE(OP_JNZ_COD)     \
+    jnz     OP_VAL_TMPL ;\
 .LOP_JNZ_COD_END:
 #define OP_JNZ_COD_SIZE (.LOP_JNZ_COD_END - OP_JNZ_COD)
 

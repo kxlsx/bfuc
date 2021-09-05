@@ -1,4 +1,4 @@
-bfuc v0.0.3
+bfuc v0.0.4
 ===========
 
 ABOUT
@@ -8,7 +8,7 @@ x86_64 assembly, using only POSIX syscalls and zero external libraries.
 As a result, it and its output programs will work only on x84_64 *nix systems,
 although bear in mind that I only bothered to test it on Linux.
 
-This compiler is neither fast nor fun to use; it is utterly pointless and 
+This compiler is neither good nor fun to use; it is utterly pointless and 
 exists only as a statement of the author's abundance of free time.
 
 COMPILATION QUIRKS

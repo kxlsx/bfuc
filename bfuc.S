@@ -2,6 +2,12 @@
 
 .globl _start
 
+/* set correct SYS_WRITE args for the passed ERR */
+#define PRINTERR_SET_WRITE_ARGS(ERR)  \
+    mov    $ERR##_MSG, %rsi          ;\
+    mov    $ERR##_MSG_SIZE, %rdx     ;\
+    jmp    .Lprinterr_print
+
 /* flush wbuf, jumping to the end on error */
 #define BFCOMPILE_WRITE        \
     mov    %rbx, %rdi         ;\
@@ -42,7 +48,7 @@
     0:
 /* check movopc and push a movop if it's not 0 */
 #define BFPARSE_FLUSH_MOVOP      \
-    cmpb   $0, movopc           ;\
+    cmpl   $0, movopc           ;\
     je     0f                   ;\
     mov    movopc, %edi         ;\
     BFPARSE_PUSH_OP_VAL(OP_MOV) ;\
@@ -257,25 +263,15 @@ printerr:
     jmp    *%rax
 
     .Lprinterr_onnomem:
-    mov    $ERR_NOMEM_MSG, %rsi
-    mov    $ERR_NOMEM_MSG_SIZE, %rdx
-    jmp    .Lprinterr_print
+    PRINTERR_SET_WRITE_ARGS(ERR_NOMEM)
     .Lprinterr_onwrite:
-    mov    $ERR_WRITE_MSG, %rsi
-    mov    $ERR_WRITE_MSG_SIZE, %rdx
-    jmp    .Lprinterr_print
+    PRINTERR_SET_WRITE_ARGS(ERR_WRITE)
     .Lprinterr_onnoclosed:
-    mov    $ERR_NOCLOSED_MSG, %rsi
-    mov    $ERR_NOCLOSED_MSG_SIZE, %rdx
-    jmp    .Lprinterr_print
+    PRINTERR_SET_WRITE_ARGS(ERR_NOCLOSED)
     .Lprinterr_onnoopen:
-    mov    $ERR_NOOPEN_MSG, %rsi
-    mov    $ERR_NOOPEN_MSG_SIZE, %rdx
-    jmp    .Lprinterr_print
+    PRINTERR_SET_WRITE_ARGS(ERR_NOOPEN)
     .Lprinterr_onnoops:
-    mov    $ERR_NOOPS_MSG, %rsi
-    mov    $ERR_NOOPS_MSG_SIZE, %rdx
-    jmp    .Lprinterr_print
+    PRINTERR_SET_WRITE_ARGS(ERR_NOOPS)
 
     .Lprinterr_print:
     /* print the message */
